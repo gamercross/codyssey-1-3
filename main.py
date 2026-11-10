@@ -106,7 +106,7 @@ def _fmt_cell(v):
 # ---------------------------------------------------------------------------
 # MAC 연산 / 판정
 # ---------------------------------------------------------------------------
-def mac(pattern, flt):
+def mac(pattern, flt, verbose=False):
     """위치별로 곱해서 모두 더한다. 반복문으로 직접 계산 (N² 번의 곱셈 + 덧셈)."""
     n = pattern.n
     if flt.n != n:
@@ -118,7 +118,10 @@ def mac(pattern, flt):
         p_row = p_rows[i]
         f_row = f_rows[i]
         for j in range(n):
-            total += p_row[j] * f_row[j]
+            product = p_row[j] * f_row[j]
+            total += product
+            if verbose:
+                print(f"[MAC 중간 디버그] ({i},{j}) p={p_row[j]} * f={f_row[j]} = {product:.2f} -> 누적: {total:.2f}")
     return total
 
 
@@ -150,15 +153,25 @@ def normalize_label(raw):
     return LABEL_ALIASES.get(raw.strip().lower())
 
 
-def measure_ms(func, *args, repeat=REPEAT):
-    """연산 함수 호출 구간만 repeat 번 측정해 평균(ms)을 돌려준다. I/O 는 포함하지 않는다."""
-    func(*args)  # 워밍업 1회 (측정 제외)
-    elapsed = 0.0
+def measure_stats(func, *args, repeat=REPEAT):
+    """연산 함수 호출 구간만 repeat 번 측정해 (평균, 표준편차, 최소, 최대)(ms)를 돌려준다.
+    I/O 는 포함하지 않으며 장치별 노이즈 완화를 위해 1회 워밍업을 선행한다."""
+    func(*args)  # 워밍업 1회 (측정 제외, 캐시 예열 및 OS 지연 완화)
+    times = []
     for _ in range(repeat):
         start = time.perf_counter()
         func(*args)
-        elapsed += time.perf_counter() - start
-    return elapsed / repeat * 1000.0
+        times.append((time.perf_counter() - start) * 1000.0)
+    avg = sum(times) / repeat
+    variance = sum((t - avg) ** 2 for t in times) / repeat
+    std = variance ** 0.5
+    return avg, std, min(times), max(times)
+
+
+def measure_ms(func, *args, repeat=REPEAT):
+    """연산 함수 호출 구간만 repeat 번 측정해 평균(ms)을 돌려준다. I/O 는 포함하지 않는다."""
+    avg, _, _, _ = measure_stats(func, *args, repeat=repeat)
+    return avg
 
 
 # ---------------------------------------------------------------------------
@@ -218,21 +231,24 @@ def read_matrix(title, n=3):
                 break
         if error is None:
             return Matrix.from_rows(rows, expected_n=n)
-        print(error)
+        print(f"[예외 감지] 사용자 입력 검증 실패: {error}")
+        print(f"예시 입력: {' '.join(['0'] * (n - 1) + ['1'])} (각 줄마다 {n}개의 숫자를 공백으로 구분해 입력)")
         print("→ 처음 줄부터 다시 입력하세요.\n")
 
 
 def print_perf_table(sizes, repeat=REPEAT):
     """크기별로 Cross 패턴 × Cross 필터 MAC 시간을 재서 표로 출력한다."""
-    print(f"{'크기':<10}{'평균 시간(ms)':>14}{'연산 횟수(N²)':>16}")
-    print("-" * 42)
+    print(f"{'크기':<10}{'평균 시간(ms)':>14}{'표준편차(ms)':>14}{'최소/최대(ms)':>18}{'연산 횟수(N²)':>16}")
+    print("-" * 74)
     rows = []
     for n in sizes:
         pattern = make_cross(n)
         flt = make_cross(n)
-        avg = measure_ms(mac, pattern, flt, repeat=repeat)
+        avg, std, min_t, max_t = measure_stats(mac, pattern, flt, repeat=repeat)
         rows.append((n, avg))
-        print(f"{f'{n}×{n}':<10}{avg:>14.4f}{n * n:>16}")
+        min_max_str = f"{min_t:.4f}/{max_t:.4f}"
+        print(f"{f'{n}×{n}':<10}{avg:>14.4f}{std:>14.4f}{min_max_str:>18}{n * n:>16}")
+    print("\n※ [측정 시스템 안내] 장치별 백그라운드 노이즈 영향을 완화하기 위해 1회 워밍업을 선행하며, 정확한 재현성 검증 시 REPEAT 횟수 확대를 권장합니다.")
     return rows
 
 
@@ -254,6 +270,7 @@ def run_user_mode():
 
     section("[2] 패턴 입력")
     pattern = read_matrix("패턴", n)
+    print(f"[검증 로그] 3×3 행렬 입력 검증 완료 (필터 A, 필터 B, 패턴 형식 및 크기 일치)")
 
     score_a = mac(pattern, filter_a)
     score_b = mac(pattern, filter_b)
@@ -404,6 +421,12 @@ def run_json_mode(path=DEFAULT_DATA_PATH):
         return
     filters = load_filters(data)
 
+    raw_filters = data.get("filters") if isinstance(data, dict) else {}
+    total_filters = len(raw_filters) if isinstance(raw_filters, dict) else 0
+    loaded_filters = len(filters)
+    filter_fail_cnt = total_filters - loaded_filters
+    filter_fail_rate = (filter_fail_cnt / total_filters * 100) if total_filters else 0.0
+
     section("[2] 패턴 분석 (라벨 정규화 적용)")
     patterns = data.get("patterns") if isinstance(data, dict) else None
     results = []
@@ -423,6 +446,11 @@ def run_json_mode(path=DEFAULT_DATA_PATH):
         else:
             print(f"FAIL ({r['reason']})")
 
+    total_patterns = len(patterns)
+    pattern_fail_cnt = sum(1 for r in results if r["cross"] is None)
+    pattern_fail_rate = (pattern_fail_cnt / total_patterns * 100) if total_patterns else 0.0
+    print(f"\n[로드 요약] filters 로드 실패율: {filter_fail_rate:.1f}% ({loaded_filters}/{total_filters} 묶음 성공) | patterns 로드 실패율: {pattern_fail_rate:.1f}% ({total_patterns - pattern_fail_cnt}/{total_patterns}건 로드 성공)")
+
     section(f"[3] 성능 분석 (평균/{REPEAT}회)")
     print_perf_table(PERF_SIZES)
 
@@ -433,10 +461,17 @@ def run_json_mode(path=DEFAULT_DATA_PATH):
     print(f"통과: {passed}개")
     print(f"실패: {failed}개")
     if failed:
-        print("\n실패 케이스:")
+        from collections import Counter
+        reason_counts = Counter(r["reason"] for r in results if not r["passed"])
+        print("\n실패 원인별 집계:")
+        for reason, count in reason_counts.items():
+            print(f"- {reason}: {count}건")
+        print("\n실패 케이스 목록:")
         for r in results:
             if not r["passed"]:
                 print(f"- {r['key']}: {r['reason']}")
+    else:
+        print("\n실패 원인별 집계: 실패 건수 없음 (0건)")
     print('\n(상세 원인 분석 및 복잡도 설명은 README.md 의 "결과 리포트" 섹션 참고)')
     return results
 

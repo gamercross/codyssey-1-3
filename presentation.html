@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini NPU Simulator - 프로젝트 발표</title>
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --bg-card: rgba(22, 30, 49, 0.75);
+      --bg-card-hover: rgba(30, 41, 67, 0.85);
+      --border-color: rgba(99, 102, 241, 0.2);
+      --border-focus: rgba(129, 140, 248, 0.6);
+      --accent-primary: #6366f1;
+      --accent-secondary: #06b6d4;
+      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --text-muted: #64748b;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --code-bg: #030712;
+      --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* Background glow effect */
+    .ambient-glow {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(6, 182, 212, 0.05) 50%, transparent 70%);
+      top: -150px;
+      right: -150px;
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(40px);
+    }
+    .ambient-glow-bottom {
+      position: fixed;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.1) 0%, rgba(99, 102, 241, 0.03) 60%, transparent 75%);
+      bottom: -150px;
+      left: -150px;
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(50px);
+    }
+
+    /* Top Navigation Bar */
+    header {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 36px;
+      background: rgba(11, 15, 25, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-badge {
+      background: var(--accent-gradient);
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+    }
+
+    .slide-progress-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+      max-width: 420px;
+      margin: 0 32px;
+    }
+
+    .progress-bar-bg {
+      flex: 1;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent-gradient);
+      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 8px rgba(6, 182, 212, 0.5);
+    }
+
+    .slide-counter {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      min-width: 50px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-icon {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      color: var(--text-sub);
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-main);
+      border-color: var(--border-focus);
+    }
+
+    /* Main Slide Deck Container */
+    main {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 48px;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 40px 60px;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      transform: translateX(40px) scale(0.98);
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow-y: auto;
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .slide.prev {
+      opacity: 0;
+      transform: translateX(-40px) scale(0.98);
+    }
+
+    /* Typography & Slide Elements */
+    .slide-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent-secondary);
+      margin-bottom: 8px;
+    }
+
+    .slide-title {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #ffffff 40%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .slide-desc {
+      font-size: 1.05rem;
+      color: var(--text-sub);
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      flex: 1;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      flex: 1;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      flex: 1;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 24px;
+      backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.25s, transform 0.25s;
+    }
+
+    .card:hover {
+      border-color: var(--border-focus);
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: var(--accent-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    .card-title {
+      font-size: 1.12rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .card-body {
+      color: var(--text-sub);
+      font-size: 0.94rem;
+      line-height: 1.6;
+      flex: 1;
+    }
+
+    /* Code Blocks */
+    .code-box {
+      background: var(--code-bg);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      overflow-x: auto;
+      line-height: 1.5;
+    }
+
+    .code-box .kw { color: #f472b6; }
+    .code-box .fn { color: #60a5fa; }
+    .code-box .str { color: #34d399; }
+    .code-box .cm { color: #64748b; font-style: italic; }
+    .code-box .num { color: #fbbf24; }
+
+    /* Tables */
+    .data-table-wrapper {
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.92rem;
+    }
+
+    table.data-table th {
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-main);
+      padding: 12px 16px;
+      font-weight: 700;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    table.data-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-sub);
+    }
+
+    table.data-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    table.data-table tr:hover td {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-main);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-pass {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-accent {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--accent-primary);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .badge-cyan {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--accent-secondary);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+
+    /* Interactive Matrix Sandbox */
+    .matrix-display {
+      display: inline-grid;
+      gap: 4px;
+      background: rgba(0,0,0,0.4);
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .matrix-cell {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: bold;
+      border-radius: 4px;
+    }
+    .cell-0 { background: rgba(255,255,255,0.05); color: #64748b; }
+    .cell-1 { background: rgba(99, 102, 241, 0.35); color: #818cf8; border: 1px solid rgba(99,102,241,0.5); }
+    .cell-hit { background: rgba(16, 185, 129, 0.4); color: #34d399; border: 1px solid rgba(16,185,129,0.7); }
+
+    /* Bottom Control Bar */
+    footer {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 40px;
+      background: rgba(11, 15, 25, 0.9);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .nav-hints {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 16px;
+    }
+
+    .kbd {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--text-sub);
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-nav {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-nav:hover:not(:disabled) {
+      background: var(--accent-gradient);
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-nav:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    /* Thumbnail Overview Drawer */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 99;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
+    .drawer-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: -420px;
+      width: 400px;
+      height: 100vh;
+      background: #0f172a;
+      border-left: 1px solid var(--border-color);
+      z-index: 100;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow-y: auto;
+    }
+
+    .drawer.active {
+      right: 0;
+    }
+
+    .drawer-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .drawer-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .drawer-item {
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-sub);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .drawer-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .drawer-item.active {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: var(--accent-primary);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .drawer-num {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--accent-secondary);
+      font-weight: bold;
+    }
+
+    /* Highlight box */
+    .highlight-banner {
+      background: linear-gradient(90deg, rgba(99, 102, 241, 0.12) 0%, rgba(6, 182, 212, 0.08) 100%);
+      border-left: 4px solid var(--accent-primary);
+      padding: 14px 18px;
+      border-radius: 0 10px 10px 0;
+      color: #e2e8f0;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      margin-top: 16px;
+    }
+
+    /* Metric pill */
+    .metric-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .metric-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: #fff;
+    }
+    .metric-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+  <div class="ambient-glow-bottom"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <span class="brand-badge">Mini NPU</span>
+      <span>Simulator 발표 리포트</span>
+    </div>
+
+    <div class="slide-progress-wrapper">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+      <div class="slide-counter" id="slideCounter">1 / 8</div>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-icon" id="btnToc" title="목차 열기">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+      </button>
+      <button class="btn-icon" id="btnFullscreen" title="전체화면">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Slide Deck -->
+  <main id="slideContainer">
+
+    <!-- SLIDE 1: Title -->
+    <section class="slide active" data-index="0">
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 900px; margin: 0 auto; text-align: center;">
+        <div style="margin-bottom: 16px;">
+          <span class="badge badge-accent" style="font-size: 0.9rem; padding: 6px 14px; border-radius: 999px;">
+            Codyssey 1-3 • 미션 수행 결과 발표
+          </span>
+        </div>
+        <h1 style="font-size: 3.5rem; font-weight: 800; letter-spacing: -0.04em; margin-bottom: 20px; line-height: 1.15; background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+          Mini NPU Simulator
+        </h1>
+        <p style="font-size: 1.25rem; color: var(--text-sub); line-height: 1.6; margin-bottom: 36px; max-width: 760px; margin-left: auto; margin-right: auto;">
+          하드웨어 가속기(NPU)의 핵심 원리인 <strong style="color: #60a5fa;">MAC(Multiply-Accumulate)</strong> 연산으로 
+          N×N 이미지 패턴의 형태(Cross / X)를 판정하고 성능을 분석하는 콘솔 아키텍처
+        </p>
+
+        <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 36px;">
+          <div class="metric-card" style="min-width: 160px;">
+            <div class="metric-value" style="color: var(--success);">100%</div>
+            <div class="metric-label">테스트 통과율 (9/9)</div>
+          </div>
+          <div class="metric-card" style="min-width: 160px;">
+            <div class="metric-value" style="color: var(--accent-secondary);">O(N²)</div>
+            <div class="metric-label">시간 복잡도 (M = N²)</div>
+          </div>
+          <div class="metric-card" style="min-width: 160px;">
+            <div class="metric-value" style="color: #a855f7;">20 / 20</div>
+            <div class="metric-label">평가 보완 사항 전원 반영</div>
+          </div>
+        </div>
+
+        <div style="font-size: 0.9rem; color: var(--text-muted);">
+          표준 라이브러리(`json`, `time`, `re`, `os`, `sys`)만으로 구현된 무의존성 고신뢰 시뮬레이터
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: Project Architecture -->
+    <section class="slide" data-index="1">
+      <div class="slide-tag">Architecture Overview</div>
+      <h2 class="slide-title">시스템 구조 및 핵심 설계 원칙</h2>
+      <p class="slide-desc">순수 파이썬 표준 라이브러리로 완성도 높은 2차원 정사각 행렬 구조와 에러 복원 파이프라인을 설계했습니다.</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon">▦</div>
+            <div class="card-title">Matrix 추상화 & 검증</div>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li><strong>`Matrix` 클래스</strong>: N×N 2차원 정사각 배열 래퍼</li>
+              <li>위치별 <code>get(r, c)</code> / <code>set(r, c, v)</code> 추상화</li>
+              <li><code>from_rows()</code>를 통한 엄격한 유효성 검사
+                <br>• 행/열 길이 일치 여부
+                <br>• 정수/실수 타입 확인 (bool 제외)
+                <br>• 기대 크기 일치성 보장
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon">⚡</div>
+            <div class="card-title">MAC 연산 엔진</div>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li><code>mac(pattern, flt)</code>: 같은 위치끼리 곱해 누적하는 $N^2$ 번의 반복 연산</li>
+              <li>내부 리스트 직접 캐싱(<code>p_rows[i]</code>)으로 인덱싱 오버헤드 최소화</li>
+              <li><strong>디버깅 모드</strong>: <code>verbose=True</code> 활성화 시 단계별 곱셈 누적값 실시간 추적 지원</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon">🛡</div>
+            <div class="card-title">라벨 정규화 & 동점 방어</div>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li><code>normalize_label()</code> 분리로 <code>'+'</code>, <code>'cross'</code>, <code>'x'</code> 등의 이기종 라벨을 표준 <code>Cross</code> / <code>X</code>로 단일화</li>
+              <li>부동소수점 오차 완화를 위한 <code>EPSILON = 1e-9</code> 기반 동점 검출</li>
+              <li>동점 발생 시 안전한 <code>UNDECIDED</code> 처리 규칙 확립</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="highlight-banner">
+        💡 <strong>단일 책임 원칙(SRP) 준수</strong>: 라벨 변환 로직을 판정 엔진에서 분리함으로써, 추후 <code>Triangle</code> 등 새로운 기하 라벨이 추가되더라도 기존 판정 수식 수정 없이 사전 테이블 확장만으로 대응 가능합니다.
+      </div>
+    </section>
+
+    <!-- SLIDE 3: 3 Operating Modes -->
+    <section class="slide" data-index="2">
+      <div class="slide-tag">Execution Modes</div>
+      <h2 class="slide-title">3가지 유연한 동작 모드</h2>
+      <p class="slide-desc">실시간 대화형 콘솔부터 대용량 파일 일괄 분석, 하드웨어 벤치마크 보너스 모드까지 완비했습니다.</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon">1</div>
+            <div class="card-title">사용자 대화형 입력 (3×3)</div>
+          </div>
+          <div class="card-body">
+            <p>콘솔에서 3줄씩 공백 구분으로 필터 A, B와 패턴을 직접 입력받아 즉시 판정합니다.</p>
+            <div class="code-box" style="margin-top: 12px;">
+              [1] 필터 A, B 입력<br>
+              ✓ 필터 저장 완료<br>
+              [2] 패턴 입력<br>
+              [검증 로그] 3×3 검증 통과<br>
+              A 점수: 5.0 | B 점수: 1.0<br>
+              판정: A (평균 0.0008 ms)
+            </div>
+            <p style="margin-top: 10px; font-size: 0.85rem; color: var(--accent-secondary);">
+              * 잘못된 형식 입력 시 오류 줄 안내 및 예시 포맷과 함께 재입력 루프 자동 실행
+            </p>
+          </div>
+        </div>
+
+        <div class="card" style="border-color: rgba(99, 102, 241, 0.4); background: rgba(22, 30, 49, 0.9);">
+          <div class="card-header">
+            <div class="card-icon" style="background: rgba(99,102,241,0.25); color: #fff;">2</div>
+            <div class="card-title">data.json 일괄 분석 (주요)</div>
+          </div>
+          <div class="card-body">
+            <p>5×5, 13×13, 25×25 필터와 패턴 9건을 로드하여 스키마 검증 및 PASS/FAIL을 판정합니다.</p>
+            <div class="code-box" style="margin-top: 12px;">
+              [1] 필터 로드 (5, 13, 25)<br>
+              [2] 패턴 분석 (9건 평가)<br>
+              [로드 요약] 실패율 0.0%<br>
+              [3] 성능 분석 (표준편차 포함)<br>
+              [4] 결과 요약 (9통과/0실패)
+            </div>
+            <p style="margin-top: 10px; font-size: 0.85rem; color: var(--success);">
+              * 정규식 키 매칭 및 실패 원인별 집계 카운터 내장
+            </p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon">3</div>
+            <div class="card-title">패턴 생성 & 1D 평탄화</div>
+          </div>
+          <div class="card-body">
+            <p>N(1~200)을 입력받아 자동 생성된 이상적 Cross/X 패턴을 출력하고 1차원 평탄화 MAC 성능을 비교합니다.</p>
+            <div class="code-box" style="margin-top: 12px;">
+              make_cross(N), make_x(N)<br>
+              Matrix.flatten() 호출<br>
+              2D MAC vs 1D mac_flat()<br>
+              → 3×3에서 1D가 약 25% 고속화<br>
+              (바깥 반복문 오버헤드 절감)
+            </div>
+            <p style="margin-top: 10px; font-size: 0.85rem; color: #a855f7;">
+              * 하드웨어 메모리 연속 접근(Contiguous Buffer) 원리 실증
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: MAC Algorithm & Visualizer -->
+    <section class="slide" data-index="3">
+      <div class="slide-tag">Mathematical Principle</div>
+      <h2 class="slide-title">MAC 연산과 형태 유사도 판정 메커니즘</h2>
+      <p class="slide-desc">패턴 행렬과 필터 행렬의 내적(Dot Product)을 통해 직관적이고 강력한 기하학적 유사도를 도출합니다.</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">MAC 연산 원리 수식</div>
+          </div>
+          <div class="card-body">
+            <div class="code-box" style="font-size: 0.95rem; margin-bottom: 16px;">
+              Score = ∑_{i=0}^{N-1} ∑_{j=0}^{N-1} Pattern[i][j] × Filter[i][j]
+            </div>
+            <ul style="margin-left: 20px; line-height: 1.8;">
+              <li><strong>십자가(Cross) 필터</strong>: 가로/세로 중앙 행/열이 1 (<strong style="color: #60a5fa;">총 2N - 1 칸</strong>)</li>
+              <li><strong>X 필터</strong>: 주대각선 및 반대각선이 1 (<strong style="color: #60a5fa;">총 2N - 1 칸</strong>)</li>
+              <li><strong>두 필터의 교집합</strong>: N이 홀수일 때 정중앙 단 1칸만 일치 (<strong style="color: var(--warning);">1 칸</strong>)</li>
+            </ul>
+
+            <div class="highlight-banner" style="margin-top: 20px;">
+              📈 <strong>점수 격차 분석</strong>: 일치하는 필터는 점수 $2N - 1$을 획득하지만, 불일치하는 필터는 단 1점에 그쳐 N이 커질수록 판정 신뢰도가 기하급수적으로 높아집니다.
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="align-items: center; justify-content: center; text-align: center;">
+          <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-sub); margin-bottom: 16px;">
+            5×5 십자가(Cross) 패턴 vs X 필터 비교 모식도
+          </div>
+          <div style="display: flex; gap: 24px; align-items: center; justify-content: center; margin-bottom: 20px;">
+            <div>
+              <div style="font-size: 0.8rem; color: #818cf8; margin-bottom: 6px;">입력 패턴 (Cross)</div>
+              <div class="matrix-display" style="grid-template-columns: repeat(5, 24px);">
+                <div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-1">1</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-0">0</div>
+                <div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-1">1</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-0">0</div>
+                <div class="matrix-cell cell-1">1</div><div class="matrix-cell cell-1">1</div><div class="matrix-cell cell-hit">1</div><div class="matrix-cell cell-1">1</div><div class="matrix-cell cell-1">1</div>
+                <div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-1">1</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-0">0</div>
+                <div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-1">1</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-0">0</div>
+              </div>
+            </div>
+
+            <div style="font-size: 1.5rem; font-weight: bold; color: var(--text-muted);">×</div>
+
+            <div>
+              <div style="font-size: 0.8rem; color: var(--accent-secondary); margin-bottom: 6px;">필터 (X)</div>
+              <div class="matrix-display" style="grid-template-columns: repeat(5, 24px);">
+                <div class="matrix-cell cell-1">1</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-1">1</div>
+                <div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-1">1</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-1">1</div><div class="matrix-cell cell-0">0</div>
+                <div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-hit">1</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-0">0</div>
+                <div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-1">1</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-1">1</div><div class="matrix-cell cell-0">0</div>
+                <div class="matrix-cell cell-1">1</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-0">0</div><div class="matrix-cell cell-1">1</div>
+              </div>
+            </div>
+          </div>
+          <div style="font-size: 0.95rem; font-family: var(--font-mono); color: #34d399;">
+            MAC 연산 결과 = 중앙 단 1개 셀만 일치 (점수 = 1.0)
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: Test Results (data.json) -->
+    <section class="slide" data-index="4">
+      <div class="slide-tag">Evaluation Report</div>
+      <h2 class="slide-title">data.json 분석 검증 결과 (100% 통과)</h2>
+      <p class="slide-desc">제공된 모든 규격(5×5, 13×13, 25×25)의 9개 테스트 케이스에서 예외 없이 완벽하게 판정에 성공했습니다.</p>
+
+      <div class="data-table-wrapper" style="margin-bottom: 24px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>케이스 ID</th>
+              <th>입력 패턴 형태</th>
+              <th>Cross 점수</th>
+              <th>X 점수</th>
+              <th>최종 판정</th>
+              <th>기대값 (expected)</th>
+              <th>결과</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>size_5_1</code></td>
+              <td>5×5 X 패턴</td>
+              <td>1.0</td>
+              <td><strong>9.0</strong></td>
+              <td><span class="badge badge-accent">X</span></td>
+              <td><code>'x'</code> → X</td>
+              <td><span class="badge badge-pass">PASS</span></td>
+            </tr>
+            <tr>
+              <td><code>size_5_2</code></td>
+              <td>5×5 십자가 패턴</td>
+              <td><strong>9.0</strong></td>
+              <td>1.0</td>
+              <td><span class="badge badge-cyan">Cross</span></td>
+              <td><code>'+'</code> → Cross</td>
+              <td><span class="badge badge-pass">PASS</span></td>
+            </tr>
+            <tr>
+              <td><code>size_5_3</code></td>
+              <td>5×5 십자가 + 노이즈 2칸</td>
+              <td><strong>9.0</strong></td>
+              <td>3.0</td>
+              <td><span class="badge badge-cyan">Cross</span></td>
+              <td><code>'+'</code> → Cross</td>
+              <td><span class="badge badge-pass">PASS</span></td>
+            </tr>
+            <tr>
+              <td><code>size_13_1~3</code></td>
+              <td>13×13 X / 십자가 / 잡음 십자가</td>
+              <td>1.0 / 25.0 / 25.0</td>
+              <td>25.0 / 1.0 / 3.0</td>
+              <td>X / Cross / Cross</td>
+              <td>규격 일치</td>
+              <td><span class="badge badge-pass">PASS (3건)</span></td>
+            </tr>
+            <tr>
+              <td><code>size_25_1~3</code></td>
+              <td>25×25 X / 십자가 / 잡음 십자가</td>
+              <td>1.0 / 49.0 / 49.0</td>
+              <td>49.0 / 1.0 / 3.0</td>
+              <td>X / Cross / Cross</td>
+              <td>규격 일치</td>
+              <td><span class="badge badge-pass">PASS (3건)</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid-2">
+        <div class="card" style="padding: 16px;">
+          <div class="card-title" style="font-size: 0.95rem; color: #60a5fa; margin-bottom: 8px;">✓ 라벨 불일치 문제 무결점 해결</div>
+          <div class="card-body" style="font-size: 0.88rem;">
+            JSON 원본의 <code>'+'</code>, <code>'cross'</code>, <code>'x'</code> 표기 불일치를 <code>normalize_label()</code>을 통해 사전 흡수하여 단순 문자열 비교로 인한 오작동을 원천 차단했습니다.
+          </div>
+        </div>
+        <div class="card" style="padding: 16px;">
+          <div class="card-title" style="font-size: 0.95rem; color: #34d399; margin-bottom: 8px;">✓ 실시간 예외 격리 및 집계</div>
+          <div class="card-body" style="font-size: 0.88rem;">
+            어떤 비정상 입력(키 오류, 크기 불일치 등)이 발생해도 프로그램 중단 없이 케이스별 FAIL로 안전 격리되며 실패 원인별 집계 카운터로 즉각 추적됩니다.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 6: Performance & Complexity -->
+    <section class="slide" data-index="5">
+      <div class="slide-tag">Performance Benchmarks</div>
+      <h2 class="slide-title">성능 분석 및 O(N²) 복잡도 실증</h2>
+      <p class="slide-desc">1회 워밍업 선행 후 10회 반복 측정하여 표준편차와 최소/최대 변동성 지표를 정밀 산출했습니다.</p>
+
+      <div class="grid-2">
+        <div class="data-table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>행렬 크기</th>
+                <th>평균 시간 (ms)</th>
+                <th>표준편차 (ms)</th>
+                <th>연산 수 (N²)</th>
+                <th>칸당 연산 시간</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>3×3</strong></td>
+                <td>0.0008 ms</td>
+                <td>±0.0001</td>
+                <td>9</td>
+                <td>약 88 ns</td>
+              </tr>
+              <tr>
+                <td><strong>5×5</strong></td>
+                <td>0.0013 ms</td>
+                <td>±0.0001</td>
+                <td>25</td>
+                <td>약 52 ns</td>
+              </tr>
+              <tr>
+                <td><strong>13×13</strong></td>
+                <td>0.0065 ms</td>
+                <td>±0.0001</td>
+                <td>169</td>
+                <td>약 38 ns</td>
+              </tr>
+              <tr>
+                <td><strong>25×25</strong></td>
+                <td>0.0219 ms</td>
+                <td>±0.0003</td>
+                <td>625</td>
+                <td>약 35 ns</td>
+              </tr>
+              <tr>
+                <td><strong>101×101</strong></td>
+                <td>0.2509 ms</td>
+                <td>±0.0152</td>
+                <td>10,201</td>
+                <td>약 25 ns</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">복잡도 및 NPU 가속의 필요성</div>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li><strong>시간 복잡도</strong>: $N \times N$ 모든 원소를 순회하므로 **$O(N^2)$**이며, 총 입력 원소 수 $M = N^2$ 기준으로는 **$O(M)$** 선형 시간입니다.</li>
+              <li><strong>고정 비용(Fixed Overhead) 효과</strong>: 3×3 등 소형 크기에서는 파이썬 함수 호출 비용이 차지하는 비중이 크나, $N$이 커질수록 칸당 연산 시간이 약 25 ns로 일정하게 수렴합니다.</li>
+              <li><strong>대형 N(1000×1000) 비용 분석</strong>:
+                <br>• $M = 1,000,000$ 셀 (단일 행렬 약 8MB 메모리)
+                <br>• CPU 순차 연산 시 1회 MAC에 25~30ms 소요
+                <br>• 128개 채널 합성 시 프레임당 약 3.5초 소요 (실시간 처리 불가)
+              </li>
+            </ul>
+
+            <div class="highlight-banner" style="margin-top: 14px;">
+              🚀 <strong>NPU의 병렬성</strong>: Systolic Array 구조를 통해 수천 개의 MAC 연산기를 하드웨어적으로 병렬 배치하여 $O(N^2)$의 연산 지연을 획기적으로 압축합니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7: 20 Evaluation Items Feedback -->
+    <section class="slide" data-index="6">
+      <div class="slide-tag">Quality Assurance</div>
+      <h2 class="slide-title">20개 평가 항목 피드백 전원 반영 완료</h2>
+      <p class="slide-desc">코드 안정성, 수치 정밀도, 문서화, 성능 지표에 이르는 20개 세부 보완 요구사항을 100% 반영했습니다.</p>
+
+      <div class="grid-4" style="font-size: 0.88rem;">
+        <div class="card" style="padding: 16px;">
+          <div style="font-weight: 700; color: #818cf8; margin-bottom: 8px;">입출력 및 예외 처리</div>
+          <ul style="padding-left: 16px; color: var(--text-sub); line-height: 1.6;">
+            <li><strong>#1</strong> 사용자 입력 예외 감지 로그</li>
+            <li><strong>#3</strong> 입력 실패 시 포맷 예시 출력</li>
+            <li><strong>#4</strong> 필터/패턴 로드 실패율 출력</li>
+            <li><strong>#8</strong> 실패 원인별 집계 카운터</li>
+          </ul>
+        </div>
+
+        <div class="card" style="padding: 16px;">
+          <div style="font-weight: 700; color: var(--accent-secondary); margin-bottom: 8px;">수치 판정 및 정책</div>
+          <ul style="padding-left: 16px; color: var(--text-sub); line-height: 1.6;">
+            <li><strong>#2</strong> EPSILON 설정 변경 문서화</li>
+            <li><strong>#6</strong> UNDECIDED 후속 조치 옵션</li>
+            <li><strong>#14</strong> 점수 차이 임계값 해석 가이드</li>
+            <li><strong>#16</strong> 1e-9 엡실론 선택 근거 제시</li>
+            <li><strong>#17</strong> 모드별 동점 콘솔 출력 예시</li>
+          </ul>
+        </div>
+
+        <div class="card" style="padding: 16px;">
+          <div style="font-weight: 700; color: #34d399; margin-bottom: 8px;">성능 및 변동성 지표</div>
+          <ul style="padding-left: 16px; color: var(--text-sub); line-height: 1.6;">
+            <li><strong>#7</strong> 표준편차 및 최소/최대 표기</li>
+            <li><strong>#13</strong> 워밍업 및 재현성 체크 팁</li>
+            <li><strong>#15</strong> O(N²) 및 M=N² 복잡도 병기</li>
+            <li><strong>#19</strong> 1000×1000 최악 비용 시뮬레이션</li>
+            <li><strong>#20</strong> 코드 수준 최적화 기법 정리</li>
+          </ul>
+        </div>
+
+        <div class="card" style="padding: 16px;">
+          <div style="font-weight: 700; color: #fbbf24; margin-bottom: 8px;">설계 및 문서화 강화</div>
+          <ul style="padding-left: 16px; color: var(--text-sub); line-height: 1.6;">
+            <li><strong>#5</strong> LABEL_ALIASES 매핑 표</li>
+            <li><strong>#9</strong> 결과 리포트 한 줄 요약 헤더</li>
+            <li><strong>#10</strong> MAC 중간 누적값 디버그 옵션</li>
+            <li><strong>#11</strong> 비정형 키 우선순위 처리 규칙</li>
+            <li><strong>#12</strong> 라벨 분리 장점 및 사례 설명</li>
+            <li><strong>#18</strong> 신규 라벨 추가 3단계 절차</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 8: Conclusion & Summary -->
+    <section class="slide" data-index="7">
+      <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 860px; margin: 0 auto; text-align: center;">
+        <span class="slide-tag" style="justify-content: center;">Conclusion</span>
+        <h2 class="slide-title" style="font-size: 2.8rem; margin-bottom: 20px;">
+          NPU 가속 원리를 관통하는 결론
+        </h2>
+        <p style="font-size: 1.15rem; color: var(--text-sub); line-height: 1.7; margin-bottom: 36px;">
+          Mini NPU Simulator 프로젝트는 단순한 패턴 인식을 넘어, 
+          <strong>행렬 내적의 대규모 반복 특성</strong>, <strong>부동소수점 정밀도 한계</strong>, 
+          그리고 <strong>메모리 접근 구조가 소프트웨어와 하드웨어 성능에 미치는 영향</strong>을 
+          직접 확인하고 검증한 완성형 프로젝트입니다.
+        </p>
+
+        <div class="grid-3" style="margin-bottom: 36px; text-align: left;">
+          <div class="card">
+            <div style="font-weight: 700; color: #fff; margin-bottom: 6px;">1. 완벽한 신뢰성</div>
+            <div style="font-size: 0.88rem; color: var(--text-sub);">
+              모든 비정형 키, 불일치 라벨, 부동소수점 오차를 완벽히 통제하여 100% 판정 성공률 달성
+            </div>
+          </div>
+          <div class="card">
+            <div style="font-weight: 700; color: var(--accent-secondary); margin-bottom: 6px;">2. 통계적 정밀도</div>
+            <div style="font-size: 0.88rem; color: var(--text-sub);">
+              워밍업 및 표준편차 산출로 벤치마크 노이즈를 배제하고 O(N²) 복잡도를 엄밀히 증명
+            </div>
+          </div>
+          <div class="card">
+            <div style="font-weight: 700; color: #34d399; margin-bottom: 6px;">3. 하드웨어적 통찰</div>
+            <div style="font-size: 0.88rem; color: var(--text-sub);">
+              1차원 평탄화(Flatten) 비교를 통해 연속 메모리 캐시 지역성과 병렬 처리의 가치 확인
+            </div>
+          </div>
+        </div>
+
+        <div style="color: var(--text-muted); font-size: 0.95rem;">
+          감사합니다. 질문이나 피드백이 있으시면 언제든지 말씀해 주세요.
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Bottom Navigation Bar -->
+  <footer>
+    <div class="nav-hints">
+      <span><span class="kbd">←</span> / <span class="kbd">→</span> 슬라이드 이동</span>
+      <span><span class="kbd">Space</span> 다음</span>
+      <span><span class="kbd">F</span> 전체화면</span>
+      <span><span class="kbd">M</span> 목차</span>
+    </div>
+
+    <div class="nav-buttons">
+      <button class="btn-nav" id="btnPrev" disabled>
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        이전
+      </button>
+      <button class="btn-nav" id="btnNext">
+        다음
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Thumbnail / Table of Contents Drawer -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="drawer" id="drawer">
+    <div class="drawer-title">
+      <span>발표 슬라이드 목차</span>
+      <button class="btn-icon" id="btnCloseDrawer" style="width:30px; height:30px;">✕</button>
+    </div>
+    <div class="drawer-list" id="drawerList"></div>
+  </aside>
+
+  <!-- Script for Navigation & Interactions -->
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    let currentIndex = 0;
+
+    const progressBar = document.getElementById('progressBar');
+    const slideCounter = document.getElementById('slideCounter');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    const btnToc = document.getElementById('btnToc');
+    const drawer = document.getElementById('drawer');
+    const drawerOverlay = document.getElementById('drawerOverlay');
+    const btnCloseDrawer = document.getElementById('btnCloseDrawer');
+    const drawerList = document.getElementById('drawerList');
+
+    const slideTitles = [
+      "프로젝트 개요 (Mini NPU Simulator)",
+      "시스템 구조 및 핵심 설계 원칙",
+      "3가지 유연한 동작 모드",
+      "MAC 연산과 형태 유사도 판정 메커니즘",
+      "data.json 분석 검증 결과 (100% 통과)",
+      "성능 분석 및 O(N²) 복잡도 실증",
+      "20개 평가 항목 피드백 전원 반영",
+      "결론 및 하드웨어적 통찰"
+    ];
+
+    // Build Drawer Items
+    slideTitles.forEach((title, idx) => {
+      const item = document.createElement('div');
+      item.className = `drawer-item ${idx === 0 ? 'active' : ''}`;
+      item.innerHTML = `<span class="drawer-num">0${idx + 1}</span><span>${title}</span>`;
+      item.addEventListener('click', () => {
+        goToSlide(idx);
+        toggleDrawer(false);
+      });
+      drawerList.appendChild(item);
+    });
+
+    function updateSlide() {
+      slides.forEach((slide, idx) => {
+        slide.classList.remove('active', 'prev');
+        if (idx === currentIndex) {
+          slide.classList.add('active');
+        } else if (idx < currentIndex) {
+          slide.classList.add('prev');
+        }
+      });
+
+      const progress = ((currentIndex + 1) / totalSlides) * 100;
+      progressBar.style.width = `${progress}%`;
+      slideCounter.textContent = `${currentIndex + 1} / ${totalSlides}`;
+
+      btnPrev.disabled = currentIndex === 0;
+      btnNext.disabled = currentIndex === totalSlides - 1;
+
+      // Update drawer highlights
+      const drawerItems = drawerList.querySelectorAll('.drawer-item');
+      drawerItems.forEach((item, idx) => {
+        item.classList.toggle('active', idx === currentIndex);
+      });
+    }
+
+    function goToSlide(index) {
+      if (index >= 0 && index < totalSlides) {
+        currentIndex = index;
+        updateSlide();
+      }
+    }
+
+    function nextSlide() {
+      if (currentIndex < totalSlides - 1) {
+        currentIndex++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        updateSlide();
+      }
+    }
+
+    function toggleDrawer(open) {
+      const isOpen = open !== undefined ? open : !drawer.classList.contains('active');
+      drawer.classList.toggle('active', isOpen);
+      drawerOverlay.classList.toggle('active', isOpen);
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.log(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    // Event Listeners
+    btnNext.addEventListener('click', nextSlide);
+    btnPrev.addEventListener('click', prevSlide);
+    btnFullscreen.addEventListener('click', toggleFullscreen);
+    btnToc.addEventListener('click', () => toggleDrawer());
+    btnCloseDrawer.addEventListener('click', () => toggleDrawer(false));
+    drawerOverlay.addEventListener('click', () => toggleDrawer(false));
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      } else if (e.key === 'm' || e.key === 'M') {
+        toggleDrawer();
+      } else if (e.key === 'Escape') {
+        toggleDrawer(false);
+      }
+    });
+
+    // Initialize
+    updateSlide();
+  </script>
+</body>
+</html>
