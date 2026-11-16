@@ -361,6 +361,31 @@
       color: var(--text-main);
     }
 
+    /* 평가문항 슬라이드용 조밀한 표/목록 */
+    table.data-table.compact { font-size: 0.82rem; }
+    table.data-table.compact th,
+    table.data-table.compact td { padding: 7px 12px; }
+    .mini-list { padding-left: 18px; line-height: 1.55; }
+    .mini-list li { margin-bottom: 3px; }
+    .eval-card { padding: 14px 18px; }
+    .eval-card .card-header { margin-bottom: 8px; }
+    .grid-2.tight { flex: none; gap: 14px; }
+    .eval-card .card-body { font-size: 0.86rem; line-height: 1.5; }
+    .eval-card .card-title { font-size: 1rem; }
+    @media (max-height: 760px) {
+      .eval-card { padding: 10px 14px; }
+      .eval-card .card-body { font-size: 0.76rem; line-height: 1.4; }
+      .eval-card .card-title { font-size: 0.9rem; }
+      .eval-card .code-box { font-size: 0.68rem; padding: 7px 10px; }
+      .eval-card .card-header { margin-bottom: 5px; }
+      .eval-card .card-icon { width: 28px; height: 28px; font-size: 0.85rem; }
+      .mini-list li { margin-bottom: 1px; }
+      .slide-desc { margin-bottom: 16px; }
+      table.data-table.compact { font-size: 0.74rem; }
+      table.data-table.compact th, table.data-table.compact td { padding: 4px 10px; }
+    }
+    .eval-card .code-box { font-size: 0.78rem; padding: 10px 12px; margin-bottom: 8px; }
+
     .badge {
       display: inline-block;
       padding: 3px 8px;
@@ -611,7 +636,7 @@
       <div class="progress-bar-bg">
         <div class="progress-bar-fill" id="progressBar"></div>
       </div>
-      <div class="slide-counter" id="slideCounter">1 / 8</div>
+      <div class="slide-counter" id="slideCounter">1 / 12</div>
     </div>
 
     <div class="header-actions">
@@ -1075,8 +1100,256 @@
       </div>
     </section>
 
-    <!-- SLIDE 8: Conclusion & Summary -->
+    <!-- SLIDE 8: 평가문항 1 — 기능 동작 검증 -->
     <section class="slide" data-index="7">
+      <div class="slide-tag">Rubric 1 · Functional Verification</div>
+      <h2 class="slide-title">평가문항 1 · 기능 동작 검증 (9/9 PASS)</h2>
+      <p class="slide-desc">모드 1 · 모드 2를 직접 실행해 아홉 가지 점검 항목을 하나씩 확인했습니다.</p>
+
+      <div class="data-table-wrapper">
+        <table class="data-table compact">
+          <thead>
+            <tr>
+              <th>점검 항목</th>
+              <th>확인 방법</th>
+              <th>코드 위치</th>
+              <th>결과</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>모드 1: MAC 점수 · 판정(A/B/판정 불가) · 시간(ms) 출력</td>
+              <td>필터 2개 + 패턴 입력</td>
+              <td><code>run_user_mode()</code></td>
+              <td><span class="badge badge-pass">PASS</span></td>
+            </tr>
+            <tr>
+              <td>모드 1: 허용오차 내 동점 → "판정 불가"</td>
+              <td>0.1+0.2 vs 0.3 → <code>0.30000000000000004</code> vs <code>0.3</code></td>
+              <td><code>decide()</code> · <code>is_tie()</code></td>
+              <td><span class="badge badge-pass">PASS</span></td>
+            </tr>
+            <tr>
+              <td>모드 1: 열 개수 불일치 · 숫자 파싱 실패 → 안내 후 재입력</td>
+              <td><code>1 a 1</code>, 2개만, 4개 입력</td>
+              <td><code>read_matrix()</code></td>
+              <td><span class="badge badge-pass">PASS</span></td>
+            </tr>
+            <tr>
+              <td>모드 2: 패턴 키에서 N을 뽑아 올바른 필터 선택</td>
+              <td><code>size_13_2</code> → 13 → <code>size_13</code></td>
+              <td><code>PATTERN_KEY_RE</code> · <code>evaluate_case()</code></td>
+              <td><span class="badge badge-pass">PASS</span></td>
+            </tr>
+            <tr>
+              <td>expected(<code>'+'</code>, <code>'x'</code>) · filter 키(<code>'cross'</code>, <code>'x'</code>) → Cross/X 정규화</td>
+              <td>로드 시점에 표준 라벨로 바꾼 뒤 비교</td>
+              <td><code>normalize_label()</code></td>
+              <td><span class="badge badge-pass">PASS</span></td>
+            </tr>
+            <tr>
+              <td>모드 2: 동점 → UNDECIDED, FAIL로 집계</td>
+              <td>Cross 4.0 = X 4.0 패턴 → 실패 1건</td>
+              <td><code>evaluate_case()</code></td>
+              <td><span class="badge badge-pass">PASS</span></td>
+            </tr>
+            <tr>
+              <td>성능 표: 크기 · 평균 시간(ms) · 연산 횟수(N²), 10회 평균</td>
+              <td>표준편차 · 최소/최대도 함께 출력</td>
+              <td><code>print_perf_table()</code> · <code>measure_stats()</code></td>
+              <td><span class="badge badge-pass">PASS</span></td>
+            </tr>
+            <tr>
+              <td>총 테스트 / 통과 / 실패 + 실패 케이스 요약</td>
+              <td>모드 2 [4] 결과 요약 (원인별 집계 포함)</td>
+              <td><code>run_json_mode()</code></td>
+              <td><span class="badge badge-pass">PASS</span></td>
+            </tr>
+            <tr>
+              <td>README "결과 리포트" 섹션 (최소 10줄)</td>
+              <td>README 결과 리포트 1~5절</td>
+              <td><code>README.md</code></td>
+              <td><span class="badge badge-pass">PASS</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SLIDE 9: 평가문항 2 — 코드 구조 및 설계 -->
+    <section class="slide" data-index="8">
+      <div class="slide-tag">Rubric 2 · Code Structure</div>
+      <h2 class="slide-title">평가문항 2 · 코드 구조 및 설계</h2>
+      <p class="slide-desc">MAC 흐름, 키 → 필터 매칭, 라벨 정규화 분리, 시간 측정 경계를 코드 기준으로 설명합니다.</p>
+
+      <div class="grid-2 tight">
+        <div class="card eval-card">
+          <div class="card-header"><div class="card-icon">⚡</div><div class="card-title">MAC 흐름: 입력 → 곱셈 → 누적 → 점수</div></div>
+          <div class="card-body">
+            <div class="code-box">
+              입력 → Matrix.from_rows() 검증<br>
+              mac(pattern, filter):<br>
+              &nbsp;&nbsp;total = 0.0<br>
+              &nbsp;&nbsp;for i, for j:<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;total += p[i][j] * f[i][j]<br>
+              &nbsp;&nbsp;return total → decide()가 epsilon 비교
+            </div>
+            <code>mac()</code>은 입출력을 모르고 행렬 둘 → 숫자 하나만 돌려줍니다. 모드 1·2·3과 성능 측정이 모두 같은 함수를 재사용합니다.
+          </div>
+        </div>
+
+        <div class="card eval-card">
+          <div class="card-header"><div class="card-icon">🔑</div><div class="card-title">패턴 키 → 크기 N → 필터 매칭</div></div>
+          <div class="card-body">
+            <ul class="mini-list">
+              <li><code>size_5_2</code>를 <code>^size_(\d+)_(\d+)$</code>로 읽어 N=5. 형식이 다르면 MAC 전에 "키 형식 오류"로 FAIL</li>
+              <li>필터는 로드 때 <code>{5: {Cross, X}, 13: {...}}</code> 처럼 <strong>크기를 키로 하는 딕셔너리</strong>로 저장 → <code>filters.get(N)</code> 한 번으로 선택</li>
+              <li>필터 없음 · 패턴 실제 크기 불일치는 각각 FAIL 처리 (IndexError로 멈추지 않음)</li>
+              <li>키 이름의 N과 <strong>실제 배열 크기를 대조</strong>: 둘 중 하나만 믿으면 데이터가 어긋날 때 조용히 틀립니다</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card eval-card">
+          <div class="card-header"><div class="card-icon">🏷</div><div class="card-title">normalize_label()을 분리한 이유와 장점</div></div>
+          <div class="card-body">
+            <ul class="mini-list">
+              <li><strong>이유</strong>: 데이터는 <code>'+'</code>/<code>'x'</code>, <code>'cross'</code>/<code>'x'</code>를 섞어 씁니다. 그대로 비교하면 로직이 맞아도 전부 FAIL</li>
+              <li>표기 흡수를 <code>LABEL_ALIASES</code> 표 + 함수 하나로 모으고, 내부에서는 <code>Cross</code>/<code>X</code>만 사용</li>
+              <li><strong>장점</strong>: 판정·출력 코드가 표기를 모름 · 대소문자/공백 처리 한 곳 · 모르는 표기는 <code>None</code> → "데이터 오류"와 "로직 오류"가 섞이지 않음 · 새 라벨은 표에 한 줄 추가</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card eval-card">
+          <div class="card-header"><div class="card-icon">⏱</div><div class="card-title">시간 측정의 경계 (I/O 배제)</div></div>
+          <div class="card-body">
+            <ul class="mini-list">
+              <li><code>measure_stats(func, *args)</code>는 <strong>연산 함수 호출 한 줄</strong>만 <code>time.perf_counter()</code> 사이에 둡니다</li>
+              <li><code>input</code> · <code>print</code> · JSON 읽기 · 행렬 검증/생성은 모두 측정 시작 전에 끝난 상태. 성능 표용 패턴도 측정 전에 <code>make_cross(n)</code>으로 준비</li>
+              <li>첫 호출은 캐시 · 바이트코드 영향이 있어 <strong>워밍업 1회를 버리고</strong> 10회 평균 · 표준편차 · 최소/최대를 기록</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 10: 평가문항 3 — 핵심 기술 원리 -->
+    <section class="slide" data-index="9">
+      <div class="slide-tag">Rubric 3 · Core Principles</div>
+      <h2 class="slide-title">평가문항 3 · 핵심 기술 원리 적용</h2>
+      <p class="slide-desc">점수의 의미, O(N²), 부동소수점 오차, 모드별 동점 규칙을 요구사항 관점에서 설명합니다.</p>
+
+      <div class="grid-2 tight">
+        <div class="card eval-card">
+          <div class="card-header"><div class="card-icon">∑</div><div class="card-title">MAC 점수가 높을수록 더 닮은 이유</div></div>
+          <div class="card-body">
+            <ul class="mini-list">
+              <li>MAC은 두 배열의 <strong>내적</strong>. 필터가 1인 자리에 패턴도 1이면 곱이 점수에 더해지고, 한쪽이 0이면 더해지지 않음</li>
+              <li>점수 = "필터가 표시한 칸 중 패턴이 같이 켜진 칸의 수". 겹침이 많을수록 높음</li>
+              <li>이 데이터: 맞는 필터 2N−1, 틀린 필터 1 (가운데 한 칸만 겹침)</li>
+              <li>한계: 전부 1인 패턴은 어느 필터와도 높게 나옴 → 이 과제는 두 필터의 <strong>상대 비교</strong>이므로 충분</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card eval-card">
+          <div class="card-header"><div class="card-icon">N²</div><div class="card-title">연산 횟수 N² → O(N²) 경향</div></div>
+          <div class="card-body">
+            <ul class="mini-list">
+              <li>N×N 칸을 한 번씩 곱하고 더하므로 곱셈 N², 덧셈 N² → <strong>O(N²)</strong></li>
+              <li>5×5 → 25×25: N은 5배, 연산 횟수는 25배, 시간은 0.0011 → 0.0168 ms (약 15배)</li>
+              <li>작은 크기는 함수 호출 같은 <strong>고정 비용</strong> 때문에 배율이 낮고, 칸당 시간이 약 25 ns로 수렴 → N² 비례의 증거</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card eval-card">
+          <div class="card-header"><div class="card-icon">ε</div><div class="card-title">부동소수점 오차와 epsilon 정책</div></div>
+          <div class="card-body">
+            <ul class="mini-list">
+              <li>실수는 2진수로 저장되고 <code>0.1</code>은 딱 떨어지지 않아 <code>0.1 + 0.2 = 0.30000000000000004</code></li>
+              <li><code>==</code>는 진짜 동점을 한쪽 승리로 오판, <code>&gt;</code>만 쓰면 1e-17 오차가 판정을 뒤집음</li>
+              <li>그래서 <code>|a − b| &lt; 1e-9</code>면 "사실상 같다"로 먼저 걸러냄. 1e-9는 float64 오차(1e-16대)보다 크고 의미 있는 점수 차이(정수 1 이상)보다 훨씬 작음</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card eval-card">
+          <div class="card-header"><div class="card-icon">⚖</div><div class="card-title">동점 규칙을 모드 1 / 모드 2로 다르게 둔 이유</div></div>
+          <div class="card-body">
+            <div class="data-table-wrapper">
+              <table class="data-table compact">
+                <thead><tr><th></th><th>모드 1</th><th>모드 2</th></tr></thead>
+                <tbody>
+                  <tr><td><strong>목적</strong></td><td>두 필터 중 가까운 쪽을 <strong>알려 주기</strong></td><td>정답(expected)이 있는 <strong>채점</strong></td></tr>
+                  <tr><td><strong>동점</strong></td><td>"판정 불가" 출력 후 끝 (판단 근거가 없는 상태)</td><td><code>UNDECIDED</code> → <strong>FAIL 집계</strong></td></tr>
+                  <tr><td><strong>이유</strong></td><td>정답 라벨이 없어 틀렸다고 할 수 없음</td><td>"모름"을 정답으로 인정하면 안 됨</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 11: 평가문항 4 — 심층 인터뷰 -->
+    <section class="slide" data-index="10">
+      <div class="slide-tag">Rubric 4 · Deep Interview</div>
+      <h2 class="slide-title">평가문항 4 · 심층 인터뷰 대비</h2>
+      <p class="slide-desc">확장 · 규모 · 하드웨어 관점의 질문 세 가지에 대한 답변입니다.</p>
+
+      <div class="grid-3">
+        <div class="card eval-card">
+          <div class="card-header"><div class="card-icon">o</div><div class="card-title">새 라벨 <code>'o'</code>가 추가된다면</div></div>
+          <div class="card-body">
+            <ol class="mini-list">
+              <li><strong>정규화</strong>: <code>LABEL_ALIASES</code>에 <code>"o": "Circle"</code> 추가</li>
+              <li><strong>로드</strong>: 라벨 둘을 가정한 곳을 <code>STANDARD_LABELS</code> 목록 하나로 모음</li>
+              <li><strong>판정</strong>: <code>{라벨: 점수}</code> 딕셔너리에서 최고점 선택, 1·2등이 epsilon 안이면 UNDECIDED</li>
+              <li><strong>출력</strong>: 점수 줄을 라벨 목록으로 반복</li>
+              <li><strong>테스트</strong>: 정규화 → 필터 로드 → 새 라벨 PASS → 기존 9건 회귀 → 라벨 간 동점</li>
+            </ol>
+            <div style="margin-top: 8px; color: var(--text-muted);">데이터가 흐르는 순서(입구 → 저장 → 판단 → 출력 → 검증)로 확장해야 어디서 깨졌는지 바로 보입니다.</div>
+          </div>
+        </div>
+
+        <div class="card eval-card">
+          <div class="card-header"><div class="card-icon">1K</div><div class="card-title">1000×1000 패턴을 처리한다면</div></div>
+          <div class="card-body">
+            <ul class="mini-list">
+              <li><strong>시간</strong>: MAC 1회 = 10⁶ 연산. 칸당 약 25 ns 적용 시 약 25 ms (필터 2개면 50 ms), 수천 장이면 분 단위. 병목은 Python 반복문</li>
+              <li><strong>메모리</strong>: 리스트 + float 객체로 칸당 약 32 B → 패턴 하나 약 30 MB, 필터 2개 포함 약 100 MB</li>
+            </ul>
+            <div style="font-weight: 700; color: #818cf8; margin: 8px 0 4px;">우선 적용할 최적화</div>
+            <ol class="mini-list">
+              <li><code>array('d')</code> / NumPy 내적 (효과 최대, 칸당 8 B)</li>
+              <li>필터를 1인 칸 좌표만 저장 (십자가는 2N−1칸 → O(N))</li>
+              <li>1차원 연속 배열 (이 과제 측정에서는 효과 작음)</li>
+            </ol>
+            <div style="margin-top: 6px; color: var(--text-muted); font-size: 0.78rem;">※ 수치는 이 코드의 측정값으로 계산한 추정치</div>
+          </div>
+        </div>
+
+        <div class="card eval-card">
+          <div class="card-header"><div class="card-icon">🧠</div><div class="card-title">CPU 직렬 vs NPU 병렬: 병목은 어디에</div></div>
+          <div class="card-body">
+            <ul class="mini-list">
+              <li><strong>CPU</strong>: 곱셈 · 덧셈을 한 칸씩 순서대로 → N² 번이 시간에 그대로 더해짐</li>
+              <li><strong>NPU</strong>: N²개의 곱셈은 서로 의존성이 없어 MAC 유닛 수천 개가 동시에 곱하고 누산기에서 합산</li>
+              <li>병렬화하면 연산은 빨라지지만 병목이 <strong>메모리 대역폭(데이터 이동)</strong>으로 옮겨 감. 곱셈기는 놀고 값이 도착하지 않는 상태</li>
+              <li>대응: 온칩 메모리에 필터를 두고 재사용(weight stationary), INT8 등 낮은 정밀도로 이동량 축소</li>
+            </ul>
+            <div class="highlight-banner" style="font-size: 0.82rem; padding: 10px 12px;">
+              이 프로그램의 병목은 "Python 반복 N²". 규모가 커지면 "곱셈 개수"에서 "값을 가져오는 속도"로 이동합니다.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 12: Conclusion & Summary -->
+    <section class="slide" data-index="11">
       <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 860px; margin: 0 auto; text-align: center;">
         <span class="slide-tag" style="justify-content: center;">Conclusion</span>
         <h2 class="slide-title" style="font-size: 2.8rem; margin-bottom: 20px;">
@@ -1174,6 +1447,10 @@
       "data.json 분석 검증 결과 (100% 통과)",
       "성능 분석 및 O(N²) 복잡도 실증",
       "20개 평가 항목 피드백 전원 반영",
+      "평가문항 1 · 기능 동작 검증 (9/9 PASS)",
+      "평가문항 2 · 코드 구조 및 설계",
+      "평가문항 3 · 핵심 기술 원리 적용",
+      "평가문항 4 · 심층 인터뷰 대비",
       "결론 및 하드웨어적 통찰"
     ];
 
@@ -1181,7 +1458,7 @@
     slideTitles.forEach((title, idx) => {
       const item = document.createElement('div');
       item.className = `drawer-item ${idx === 0 ? 'active' : ''}`;
-      item.innerHTML = `<span class="drawer-num">0${idx + 1}</span><span>${title}</span>`;
+      item.innerHTML = `<span class="drawer-num">${String(idx + 1).padStart(2, '0')}</span><span>${title}</span>`;
       item.addEventListener('click', () => {
         goToSlide(idx);
         toggleDrawer(false);
