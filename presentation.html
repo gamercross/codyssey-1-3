@@ -790,7 +790,7 @@
         </div>
 
         <div style="font-size: 0.9rem; color: var(--text-muted);">
-          표준 라이브러리(`json`, `time`, `re`, `os`, `sys`)만으로 구현된 무의존성 고신뢰 시뮬레이터
+          표준 라이브러리(`json`, `time`, `re`, `os`, `sys`, `collections`)만으로 구현된 무의존성 고신뢰 시뮬레이터
         </div>
       </div>
     </section>
@@ -827,7 +827,7 @@
           </div>
           <div class="card-body">
             <ul>
-              <li><code>mac(pattern, flt)</code>: 같은 위치끼리 곱해 누적하는 $N^2$ 번의 반복 연산</li>
+              <li><code>mac(pattern, flt)</code>: 같은 위치끼리 곱해 누적하는 N² 번의 반복 연산</li>
               <li>내부 리스트 직접 캐싱(<code>p_rows[i]</code>)으로 인덱싱 오버헤드 최소화</li>
               <li><strong>디버깅 모드</strong>: <code>verbose=True</code> 활성화 시 단계별 곱셈 누적값 실시간 추적 지원</li>
             </ul>
@@ -850,7 +850,7 @@
       </div>
 
       <div class="highlight-banner">
-        💡 <strong>단일 책임 원칙(SRP) 준수</strong>: 라벨 변환 로직을 판정 엔진에서 분리함으로써, 추후 <code>Triangle</code> 등 새로운 기하 라벨이 추가되더라도 기존 판정 수식 수정 없이 사전 테이블 확장만으로 대응 가능합니다.
+        💡 <strong>단일 책임 원칙(SRP) 준수</strong>: 라벨 변환 로직을 판정 엔진에서 분리함으로써, 새 표기(예: <code>'CROSS'</code>, <code>'×'</code>)는 <code>LABEL_ALIASES</code> 표에 한 줄만 더하면 되고, 판정 코드는 표기를 몰라도 됩니다. <code>Triangle</code> 같은 새 모양 라벨은 판정을 "두 점수 비교"에서 "여러 점수 중 최고점"으로 넓혀야 합니다(평가문항 4 참고).
       </div>
     </section>
 
@@ -873,8 +873,10 @@
               ✓ 필터 저장 완료<br>
               [2] 패턴 입력<br>
               [검증 로그] 3×3 검증 통과<br>
-              A 점수: 5.0 | B 점수: 1.0<br>
-              판정: A (평균 0.0008 ms)
+              A 점수: 5.0<br>
+              B 점수: 1.0<br>
+              연산 시간(평균/10회): 0.0007 ms<br>
+              판정: A
             </div>
             <p style="margin-top: 10px; font-size: 0.85rem; color: var(--accent-secondary);">
               * 잘못된 형식 입력 시 오류 줄 안내 및 예시 포맷과 함께 재입력 루프 자동 실행
@@ -917,7 +919,7 @@
               (바깥 반복문 오버헤드 절감)
             </div>
             <p style="margin-top: 10px; font-size: 0.85rem; color: #a855f7;">
-              * 하드웨어 메모리 연속 접근(Contiguous Buffer) 원리 실증
+              * 큰 크기(101×101)에서는 차이가 없음: Python에서는 고정 비용만 줄고, 연속 메모리 효과는 C · NPU에서 커짐
             </p>
           </div>
         </div>
@@ -946,7 +948,7 @@
             </ul>
 
             <div class="highlight-banner" style="margin-top: 20px;">
-              📈 <strong>점수 격차 분석</strong>: 일치하는 필터는 점수 $2N - 1$을 획득하지만, 불일치하는 필터는 단 1점에 그쳐 N이 커질수록 판정 신뢰도가 기하급수적으로 높아집니다.
+              📈 <strong>점수 격차 분석</strong>: 일치하는 필터는 점수 2N − 1을 얻지만, 불일치하는 필터는 단 1점에 그칩니다. 두 점수의 차이 2N − 2는 N에 비례해 커지므로, N이 클수록 판정 여유가 넓어집니다.
             </div>
           </div>
         </div>
@@ -1101,23 +1103,23 @@
               <tr>
                 <td><strong>5×5</strong></td>
                 <td>0.0013 ms</td>
-                <td>±0.0001</td>
+                <td>±0.0000</td>
                 <td>25</td>
                 <td>약 52 ns</td>
               </tr>
               <tr>
                 <td><strong>13×13</strong></td>
-                <td>0.0065 ms</td>
-                <td>±0.0001</td>
+                <td>0.0076 ms</td>
+                <td>±0.0022</td>
                 <td>169</td>
-                <td>약 38 ns</td>
+                <td>약 45 ns</td>
               </tr>
               <tr>
                 <td><strong>25×25</strong></td>
-                <td>0.0219 ms</td>
-                <td>±0.0003</td>
+                <td>0.0273 ms</td>
+                <td>±0.0078</td>
                 <td>625</td>
-                <td>약 35 ns</td>
+                <td>약 43 ns</td>
               </tr>
               <tr>
                 <td><strong>101×101</strong></td>
@@ -1136,17 +1138,17 @@
           </div>
           <div class="card-body">
             <ul>
-              <li><strong>시간 복잡도</strong>: $N \times N$ 모든 원소를 순회하므로 **$O(N^2)$**이며, 총 입력 원소 수 $M = N^2$ 기준으로는 **$O(M)$** 선형 시간입니다.</li>
-              <li><strong>고정 비용(Fixed Overhead) 효과</strong>: 3×3 등 소형 크기에서는 파이썬 함수 호출 비용이 차지하는 비중이 크나, $N$이 커질수록 칸당 연산 시간이 약 25 ns로 일정하게 수렴합니다.</li>
+              <li><strong>시간 복잡도</strong>: N×N 모든 원소를 순회하므로 <strong>O(N²)</strong>이며, 총 입력 원소 수 M = N² 기준으로는 <strong>O(M)</strong> 선형 시간입니다.</li>
+              <li><strong>고정 비용(Fixed Overhead) 효과</strong>: 3×3 등 소형 크기에서는 파이썬 함수 호출 비용이 차지하는 비중이 크나, N이 커질수록 칸당 연산 시간이 약 25 ns로 일정하게 수렴합니다.</li>
               <li><strong>대형 N(1000×1000) 비용 분석</strong>:
-                <br>• $M = 1,000,000$ 셀 (단일 행렬 약 8MB 메모리)
+                <br>• M = 1,000,000 셀 (이 코드의 리스트 + float 객체로 행렬 하나 약 30 MB, C 배열 float64라면 약 8 MB)
                 <br>• CPU 순차 연산 시 1회 MAC에 25~30ms 소요
                 <br>• 128개 채널 합성 시 프레임당 약 3.5초 소요 (실시간 처리 불가)
               </li>
             </ul>
 
             <div class="highlight-banner" style="margin-top: 14px;">
-              🚀 <strong>NPU의 병렬성</strong>: Systolic Array 구조를 통해 수천 개의 MAC 연산기를 하드웨어적으로 병렬 배치하여 $O(N^2)$의 연산 지연을 획기적으로 압축합니다.
+              🚀 <strong>NPU의 병렬성</strong>: Systolic Array 구조를 통해 수천 개의 MAC 연산기를 하드웨어적으로 병렬 배치하여 O(N²)의 연산 지연을 획기적으로 압축합니다.
             </div>
           </div>
         </div>
@@ -1200,7 +1202,7 @@
             <li><strong>#10</strong> MAC 중간 누적값 디버그 옵션</li>
             <li><strong>#11</strong> 비정형 키 우선순위 처리 규칙</li>
             <li><strong>#12</strong> 라벨 분리 장점 및 사례 설명</li>
-            <li><strong>#18</strong> 신규 라벨 추가 3단계 절차</li>
+            <li><strong>#18</strong> 신규 라벨 추가 5단계 절차</li>
           </ul>
         </div>
       </div>
@@ -1364,7 +1366,7 @@
           <div class="card-body">
             <ul class="mini-list">
               <li>N×N 칸을 한 번씩 곱하고 더하므로 곱셈 N², 덧셈 N² → <strong>O(N²)</strong></li>
-              <li>5×5 → 25×25: N은 5배, 연산 횟수는 25배, 시간은 0.0011 → 0.0168 ms (약 15배)</li>
+              <li>5×5 → 25×25: N은 5배, 연산 횟수는 25배, 시간은 0.0013 → 0.0273 ms (약 21배)</li>
               <li>작은 크기는 함수 호출 같은 <strong>고정 비용</strong> 때문에 배율이 낮고, 칸당 시간이 약 25 ns로 수렴 → N² 비례의 증거</li>
             </ul>
           </div>
@@ -1484,7 +1486,7 @@
           <div class="card">
             <div style="font-weight: 700; color: #34d399; margin-bottom: 6px;">3. 하드웨어적 통찰</div>
             <div style="font-size: 0.88rem; color: var(--text-sub);">
-              1차원 평탄화(Flatten) 비교를 통해 연속 메모리 캐시 지역성과 병렬 처리의 가치 확인
+              1차원 평탄화(Flatten) 비교로 Python에서는 고정 비용만 줄어듦을 확인, 연속 메모리 · 병렬 처리의 효과는 C · NPU에서 커진다
             </div>
           </div>
         </div>
