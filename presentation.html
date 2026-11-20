@@ -619,7 +619,109 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
+
+    /* 밝기 버튼: 지금 판의 반대 그림을 보인다 */
+    .theme-icon-moon { display: none; }
+    html[data-theme="light"] .theme-icon-sun { display: none; }
+    html[data-theme="light"] .theme-icon-moon { display: block; }
+
+    /* ------------------------------------------------------------------
+       라이트 모드 (T 키 · 위 오른쪽 해/달 버튼 · 주소 ?theme=light)
+       순백 대신 한 톤 낮은 바탕, 남색 글씨, 쨍한 파랑 대신 파스텔
+       ------------------------------------------------------------------ */
+    html[data-theme="light"] {
+      color-scheme: light;
+      --bg-dark: #e9edf5;
+      --bg-card: rgba(246, 248, 252, 0.88);
+      --bg-card-hover: rgba(240, 243, 250, 0.95);
+      --border-color: rgba(91, 99, 183, 0.2);
+      --border-focus: rgba(91, 99, 183, 0.5);
+      --accent-primary: #5b63b7;
+      --accent-secondary: #2b8a9a;
+      --accent-gradient: linear-gradient(135deg, #a9aee6 0%, #9fd4da 100%);
+      --text-main: #1e2a4a;
+      --text-sub: #46516f;
+      --text-muted: #6b7591;
+      --success: #1f8a63;
+      --warning: #a86b0c;
+      --danger: #b8434a;
+      --code-bg: #e2e7f1;
+    }
+    html[data-theme="light"] .ambient-glow {
+      background: radial-gradient(circle, rgba(169, 174, 230, 0.35) 0%, rgba(159, 212, 218, 0.12) 50%, transparent 70%);
+    }
+    html[data-theme="light"] .ambient-glow-bottom {
+      background: radial-gradient(circle, rgba(159, 212, 218, 0.3) 0%, rgba(169, 174, 230, 0.08) 60%, transparent 75%);
+    }
+    html[data-theme="light"] header { background: rgba(233, 237, 245, 0.88); }
+    html[data-theme="light"] footer { background: rgba(233, 237, 245, 0.92); }
+    html[data-theme="light"] .brand-badge { color: var(--text-main); box-shadow: none; }
+    html[data-theme="light"] .progress-bar-bg { background: rgba(30, 42, 74, 0.08); }
+    html[data-theme="light"] .progress-bar-fill { box-shadow: none; }
+    html[data-theme="light"] .btn-icon { background: rgba(246, 248, 252, 0.7); }
+    html[data-theme="light"] .btn-icon:hover { background: rgba(91, 99, 183, 0.1); }
+    html[data-theme="light"] .slide-title {
+      background: linear-gradient(135deg, #1e2a4a 40%, #3d4a75 100%);
+      -webkit-background-clip: text;
+    }
+    html[data-theme="light"] .card-icon { background: rgba(91, 99, 183, 0.12); border-color: rgba(91, 99, 183, 0.28); }
+    html[data-theme="light"] .card-title { color: var(--text-main); }
+    html[data-theme="light"] .code-box { border-color: rgba(30, 42, 74, 0.1); color: #24304f; }
+    html[data-theme="light"] .code-box .kw { color: #a3366f; }
+    html[data-theme="light"] .code-box .fn { color: #2f5fa8; }
+    html[data-theme="light"] .code-box .str { color: #1f7a57; }
+    html[data-theme="light"] .code-box .cm { color: #6b7591; }
+    html[data-theme="light"] .code-box .num { color: #9a5f00; }
+    html[data-theme="light"] table.data-table th { background: rgba(214, 221, 236, 0.9); }
+    html[data-theme="light"] table.data-table td { border-bottom-color: rgba(30, 42, 74, 0.07); }
+    html[data-theme="light"] table.data-table tr:hover td { background: rgba(91, 99, 183, 0.06); }
+    html[data-theme="light"] .matrix-display { background: rgba(30, 42, 74, 0.05); border-color: rgba(30, 42, 74, 0.1); }
+    html[data-theme="light"] .cell-0 { background: rgba(30, 42, 74, 0.05); color: #8a93ad; }
+    html[data-theme="light"] .cell-1 { background: rgba(91, 99, 183, 0.2); color: #3d4597; border-color: rgba(91, 99, 183, 0.4); }
+    html[data-theme="light"] .cell-hit { background: rgba(31, 138, 99, 0.2); color: #156b4c; border-color: rgba(31, 138, 99, 0.5); }
+    html[data-theme="light"] .kbd { background: rgba(246, 248, 252, 0.8); border-color: rgba(30, 42, 74, 0.15); }
+    html[data-theme="light"] .btn-nav:hover:not(:disabled) { color: var(--text-main); box-shadow: none; }
+    html[data-theme="light"] .drawer-overlay { background: rgba(30, 42, 74, 0.25); }
+    html[data-theme="light"] .drawer { background: #eef1f7; }
+    html[data-theme="light"] .drawer-title { color: var(--text-main); }
+    html[data-theme="light"] .drawer-item { background: rgba(30, 42, 74, 0.03); }
+    html[data-theme="light"] .drawer-item:hover { background: rgba(91, 99, 183, 0.08); color: var(--text-main); }
+    html[data-theme="light"] .drawer-item.active { background: rgba(91, 99, 183, 0.14); color: var(--text-main); }
+    html[data-theme="light"] .highlight-banner {
+      background: linear-gradient(90deg, rgba(91, 99, 183, 0.1) 0%, rgba(43, 138, 154, 0.07) 100%);
+      color: #24304f;
+    }
+    html[data-theme="light"] .metric-card { background: rgba(246, 248, 252, 0.7); border-color: rgba(30, 42, 74, 0.08); }
+    html[data-theme="light"] .metric-value { color: var(--text-main); }
+
+    /* 본문에 직접 적힌 어두운 판 색을 밝은 판에 맞게 바꾼다 */
+    html[data-theme="light"] [style*="#60a5fa"] { color: #2f5fa8 !important; }
+    html[data-theme="light"] [style*="#34d399"] { color: #1f7a57 !important; }
+    html[data-theme="light"] [style*="#818cf8"] { color: #4b52a8 !important; }
+    html[data-theme="light"] [style*="#a855f7"] { color: #7442ad !important; }
+    html[data-theme="light"] [style*="#fbbf24"] { color: #9a5f00 !important; }
+    html[data-theme="light"] [style*="color: #fff"] { color: var(--text-main) !important; }
+    html[data-theme="light"] [style*="linear-gradient(135deg, #ffffff"] {
+      background: linear-gradient(135deg, #1e2a4a 30%, #4b5a85 100%) !important;
+      -webkit-background-clip: text !important;
+    }
+    html[data-theme="light"] [style*="rgba(22, 30, 49, 0.9)"] {
+      background: rgba(246, 248, 252, 0.95) !important;
+      border-color: rgba(91, 99, 183, 0.4) !important;
+    }
+    html[data-theme="light"] [style*="rgba(99,102,241,0.25)"] { background: rgba(91, 99, 183, 0.18) !important; }
   </style>
+  <script>
+    // 그리기 전에 판을 정해 깜빡임을 막는다. 주소 ?theme= > 지난 선택 > 어두운 판(원래 판)
+    (function () {
+      var t = null;
+      try { t = new URLSearchParams(location.search).get('theme'); } catch (e) {}
+      if (t !== 'light' && t !== 'dark') {
+        try { t = localStorage.getItem('npu-theme'); } catch (e) {}
+      }
+      document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+    })();
+  </script>
 </head>
 <body>
   <div class="ambient-glow"></div>
@@ -640,6 +742,10 @@
     </div>
 
     <div class="header-actions">
+      <button class="btn-icon" id="btnTheme" title="밝은 화면 / 어두운 화면 (T)" aria-label="밝기 바꾸기">
+        <svg class="theme-icon-sun" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32l1.41-1.41"/></svg>
+        <svg class="theme-icon-moon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      </button>
       <button class="btn-icon" id="btnToc" title="목차 열기">
         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
       </button>
@@ -1398,6 +1504,7 @@
       <span><span class="kbd">Space</span> 다음</span>
       <span><span class="kbd">F</span> 전체화면</span>
       <span><span class="kbd">M</span> 목차</span>
+      <span><span class="kbd">T</span> 밝기</span>
     </div>
 
     <div class="nav-buttons">
@@ -1529,7 +1636,14 @@
       }
     }
 
+    function toggleTheme() {
+      const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('npu-theme', next); } catch (e) {}
+    }
+
     // Event Listeners
+    document.getElementById('btnTheme').addEventListener('click', toggleTheme);
     btnNext.addEventListener('click', nextSlide);
     btnPrev.addEventListener('click', prevSlide);
     btnFullscreen.addEventListener('click', toggleFullscreen);
@@ -1548,6 +1662,8 @@
         toggleFullscreen();
       } else if (e.key === 'm' || e.key === 'M') {
         toggleDrawer();
+      } else if (e.key === 't' || e.key === 'T') {
+        toggleTheme();
       } else if (e.key === 'Escape') {
         toggleDrawer(false);
       }
