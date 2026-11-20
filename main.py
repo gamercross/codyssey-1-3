@@ -1,7 +1,7 @@
 """Mini NPU Simulator.
 
 MAC(Multiply-Accumulate) 연산으로 입력 패턴이 어느 필터(Cross / X)와 더 닮았는지 판정한다.
-외부 라이브러리 없이 표준 라이브러리(json, time, re, os, sys)만 사용한다.
+외부 라이브러리 없이 표준 라이브러리(json, time, re, os, sys, collections)만 사용한다.
 
 모드
   1. 사용자 입력 (3x3)  : 필터 A, B와 패턴을 콘솔로 입력받아 판정
